@@ -7,13 +7,18 @@ form.addEventListener("submit", async (event) => {
 
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
-    function: filter
+    function: filter,
+    args: [event.target.filterText.value.split(',')]
   }); 
 });
 
-function filter() {
+function filter(filterTerms) {
   const listItems = document.querySelectorAll("#job-container li");
 
-  for (item of listItems)
+  for (item of listItems) { // highlight items that don't contain filter terms
+    if (filterTerms.some(term => item.innerText.includes(term)))
+      continue;
+    
     item.style.backgroundColor = "red";
+  }
 }
