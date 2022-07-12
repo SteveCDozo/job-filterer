@@ -2,11 +2,7 @@
   "manifest_version": 3,
   "name": "Job Filterer",
   "version": "0.1.0",
-  "default_locale": "en",
   "description": "Filter out unwanted job titles from job lists",
-  "icons": {
-    "128": "icon.png"
-  },
   "action": {
     "default_popup": "popup.html"
   }
