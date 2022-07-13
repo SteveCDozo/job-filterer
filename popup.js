@@ -17,6 +17,11 @@ form.addEventListener("submit", async (event) => {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
+  chrome.scripting.insertCSS({
+    target: { tabId: tab.id },
+    css: ".highlight { background-color: gold; }"
+  });
+
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     function: filter,
@@ -31,8 +36,8 @@ function filter(filterTerms) {
     const itemText = item.innerText.toLowerCase();
 
     if (filterTerms.some(term => itemText.includes(term)))
-      continue;
-    
-    item.style.backgroundColor = "red";
+      item.classList.remove("highlight");
+    else    
+      item.classList.add("highlight");
   }
 }
