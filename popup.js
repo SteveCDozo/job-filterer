@@ -1,5 +1,7 @@
 const form = document.getElementById("form");
 
+document.getElementById("filterText").focus();
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
