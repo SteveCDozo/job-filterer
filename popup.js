@@ -1,17 +1,27 @@
 const form = document.getElementById("form");
 
-document.getElementById("filterText").focus();
+const filterTextElem = document.getElementById("filterText");
+filterTextElem.focus();
+
+chrome.storage.sync.get("filterText", data => {
+  if ("filterText" in data)
+    filterTextElem.value = data.filterText;  
+})
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+
+  const filterText = event.target.filterText.value;
+
+  chrome.storage.sync.set({ filterText });
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     function: filter,
-    args: [event.target.filterText.value.toLowerCase().split(',')]
-  }); 
+    args: [filterText.toLowerCase().split(',')]
+  });
 });
 
 function filter(filterTerms) {
