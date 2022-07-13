@@ -8,7 +8,7 @@ form.addEventListener("submit", async (event) => {
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     function: filter,
-    args: [event.target.filterText.value.split(',')]
+    args: [event.target.filterText.value.toLowerCase().split(',')]
   }); 
 });
 
@@ -16,7 +16,9 @@ function filter(filterTerms) {
   const listItems = document.querySelectorAll("#job-container li");
 
   for (item of listItems) { // highlight items that don't contain filter terms
-    if (filterTerms.some(term => item.innerText.includes(term)))
+    const itemText = item.innerText.toLowerCase();
+
+    if (filterTerms.some(term => itemText.includes(term)))
       continue;
     
     item.style.backgroundColor = "red";
