@@ -1,5 +1,5 @@
 const form = document.getElementById("form");
-
+const listItemsSelectorElem = document.getElementById("listItemsSelector");
 const filterTextElem = document.getElementById("filterText");
 filterTextElem.focus();
 
@@ -8,12 +8,13 @@ chrome.storage.sync.get("filterText", data => {
     filterTextElem.value = data.filterText;  
 });
 
-const listItemsSelector = "#job-container li";
+const testPageSelector = "#job-container li";
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const filterText = event.target.filterText.value;
+  const listItemsSelector = event.target.listItemsSelector.value || testPageSelector;
 
   chrome.storage.sync.set({ filterText });
 
@@ -45,6 +46,8 @@ function filter(filterTerms, listItemsSelector) {
 }
 
 document.getElementById("clearButton").addEventListener("click", async () => {
+  const listItemsSelector = listItemsSelectorElem.value || testPageSelector;
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   chrome.scripting.executeScript({
