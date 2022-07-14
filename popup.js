@@ -41,3 +41,19 @@ function filter(filterTerms) {
       item.classList.add("highlight");
   }
 }
+
+document.getElementById("clearButton").addEventListener("click", async () => {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    function: clear
+  });
+});
+
+function clear() {
+  const listItems = document.querySelectorAll("#job-container li");
+
+  for (item of listItems) // remove highlight from any highlighted items
+    item.classList.remove("highlight");
+}
