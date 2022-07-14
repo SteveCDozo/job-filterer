@@ -8,6 +8,8 @@ chrome.storage.sync.get("filterText", data => {
     filterTextElem.value = data.filterText;  
 });
 
+const listItemsSelector = "#job-container li";
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -25,12 +27,12 @@ form.addEventListener("submit", async (event) => {
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     function: filter,
-    args: [filterText.toLowerCase().split(',')]
+    args: [filterText.toLowerCase().split(','), listItemsSelector]
   });
 });
 
-function filter(filterTerms) {
-  const listItems = document.querySelectorAll("#job-container li");
+function filter(filterTerms, listItemsSelector) {
+  const listItems = document.querySelectorAll(listItemsSelector);
 
   for (item of listItems) { // highlight items that don't contain filter terms
     const itemText = item.innerText.toLowerCase();
@@ -47,12 +49,13 @@ document.getElementById("clearButton").addEventListener("click", async () => {
 
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
-    function: clear
+    function: clear,
+    args: [listItemsSelector]
   });
 });
 
-function clear() {
-  const listItems = document.querySelectorAll("#job-container li");
+function clear(listItemsSelector) {
+  const listItems = document.querySelectorAll(listItemsSelector);
 
   for (item of listItems) // remove highlight from any highlighted items
     item.classList.remove("highlight");
