@@ -6,7 +6,7 @@ filterTextElem.focus();
 chrome.storage.sync.get("filterText", data => {
   if ("filterText" in data)
     filterTextElem.value = data.filterText;  
-})
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
