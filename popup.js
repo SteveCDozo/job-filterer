@@ -3,9 +3,11 @@ const listItemsSelectorElem = document.getElementById("listItemsSelector");
 const filterTextElem = document.getElementById("filterText");
 filterTextElem.focus();
 
-chrome.storage.sync.get("filterText", data => {
+chrome.storage.sync.get(["filterText", "listItemsSelector"] , data => {
   if ("filterText" in data)
-    filterTextElem.value = data.filterText;  
+    filterTextElem.value = data.filterText;
+  if ("listItemsSelector" in data)
+    listItemsSelectorElem.value = data.listItemsSelector;
 });
 
 const testPageSelector = "#job-container li";
@@ -16,7 +18,7 @@ form.addEventListener("submit", async (event) => {
   const filterText = event.target.filterText.value;
   const listItemsSelector = event.target.listItemsSelector.value || testPageSelector;
 
-  chrome.storage.sync.set({ filterText });
+  chrome.storage.sync.set({ filterText, listItemsSelector });
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
