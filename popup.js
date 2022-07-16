@@ -27,7 +27,7 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const filterText = event.target.filterText.value;
-  const listItemsSelector = event.target.listItemsSelector.value || testPageSelector;
+  const listItemsSelector = event.target.listItemsSelector.value;
 
   chrome.storage.sync.set({ filterText, listItemsSelector });
 
