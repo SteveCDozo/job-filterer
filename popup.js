@@ -10,6 +10,17 @@ chrome.storage.sync.get(["filterText", "listItemsSelector"] , data => {
     listItemsSelectorElem.value = data.listItemsSelector;
 });
 
+chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+  const domain = new URL(tabs[0].url).hostname;
+
+  fetch("selectors.json")
+    .then(res => res.json())
+    .then(selectors => {
+      if (domain in selectors)
+        listItemsSelectorElem.value = selectors[domain];
+    });
+});
+
 const testPageSelector = "#job-container li";
 
 form.addEventListener("submit", async (event) => {
