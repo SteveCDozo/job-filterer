@@ -1,24 +1,32 @@
 const form = document.getElementById("form");
 const listItemsSelectorElem = document.getElementById("listItemsSelector");
+const overrideElem = document.getElementById("override");
 const filterTextElem = document.getElementById("filterText");
 filterTextElem.focus();
 
-chrome.storage.sync.get(["filterText", "listItemsSelector"] , data => {
+chrome.storage.sync.get(["filterText", "override"], data => {
   if ("filterText" in data)
     filterTextElem.value = data.filterText;
-  if ("listItemsSelector" in data)
-    listItemsSelectorElem.value = data.listItemsSelector;
+  if ("override" in data) {
+    if (!data.override) {
+      loadDefaultSelector();
+      return;
+    }
+    overrideElem.checked = true;
+    listItemsSelectorElem.disabled = false;
+    loadSavedSelector();
+  }
 });
 
-chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-  const domain = new URL(tabs[0].url).hostname;
+overrideElem.addEventListener("click", (event) => {
 
-  fetch("selectors.json")
-    .then(res => res.json())
-    .then(selectors => {
-      if (domain in selectors)
-        listItemsSelectorElem.value = selectors[domain];
-    });
+  const checked = event.target.checked;
+
+  listItemsSelectorElem.disabled = !checked;
+
+  chrome.storage.sync.set({ override: checked });
+
+  checked ? loadSavedSelector() : loadDefaultSelector();    
 });
 
 const testPageSelector = "#job-container li";
@@ -44,6 +52,26 @@ form.addEventListener("submit", async (event) => {
     args: [filterText.toLowerCase().split(','), listItemsSelector]
   });
 });
+
+function loadDefaultSelector() {
+  chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+    const domain = new URL(tabs[0].url).hostname;
+
+    fetch("selectors.json")
+      .then(res => res.json())
+      .then(selectors => {
+        if (domain in selectors)
+          listItemsSelectorElem.value = selectors[domain];
+      });
+  });
+}
+
+function loadSavedSelector() {
+  chrome.storage.sync.get(["listItemsSelector"], data => {
+    if ("listItemsSelector" in data)
+      listItemsSelectorElem.value = data.listItemsSelector;
+  });
+}
 
 function filter(filterTerms, listItemsSelector) {
   const listItems = document.querySelectorAll(listItemsSelector);
