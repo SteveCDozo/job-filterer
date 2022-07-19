@@ -82,11 +82,15 @@ function loadSavedSelector() {
 }
 
 function executeClearAndFilter(tabId, filterText, oldSelector, newSelector) {
+  executeClear(tabId, oldSelector, () => executeFilter(tabId, filterText, newSelector));
+}
+
+function executeClear(tabId, selector, callback) {
   chrome.scripting.executeScript({
     target: { tabId },
     function: clear,
-    args: [oldSelector]
-  }, () => executeFilter(tabId, filterText, newSelector));
+    args: [selector]
+  }, callback);
 }
 
 function executeFilter(tabId, filterText, itemSelector) {
@@ -115,11 +119,7 @@ document.getElementById("clearButton").addEventListener("click", async () => {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    function: clear,
-    args: [selector]
-  });
+  executeClear(tab.id, selector);
 });
 
 function clear(selector) {
