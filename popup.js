@@ -1,10 +1,10 @@
 const form = document.getElementById("form");
-const listItemsSelectorElem = document.getElementById("listItemsSelector");
+const selectorElem = document.getElementById("selector");
 const overrideElem = document.getElementById("override");
 const filterTextElem = document.getElementById("filterText");
 filterTextElem.focus();
 
-let savedListItemsSelector, prevListItemsSelector;
+let savedSelector, prevSelector;
 
 chrome.storage.sync.get(["filterText", "override"], data => {
   if ("filterText" in data)
@@ -15,7 +15,7 @@ chrome.storage.sync.get(["filterText", "override"], data => {
       return;
     }
     overrideElem.checked = true;
-    listItemsSelectorElem.disabled = false;
+    selectorElem.disabled = false;
     loadSavedSelector();
   }
 });
@@ -24,7 +24,7 @@ overrideElem.addEventListener("click", (event) => {
 
   const checked = event.target.checked;
 
-  listItemsSelectorElem.disabled = !checked;
+  selectorElem.disabled = !checked;
 
   chrome.storage.sync.set({ override: checked });
 
@@ -37,12 +37,12 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const filterText = event.target.filterText.value;
-  const newListItemsSelector = event.target.listItemsSelector.value;
+  const newSelector = event.target.selector.value;
 
   chrome.storage.sync.set({ filterText });
 
-  if (event.target.override.checked && newListItemsSelector !== savedListItemsSelector)
-    chrome.storage.sync.set({ listItemsSelector: newListItemsSelector });
+  if (event.target.override.checked && newSelector !== savedSelector)
+    chrome.storage.sync.set({ selector: newSelector });
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -51,12 +51,12 @@ form.addEventListener("submit", async (event) => {
     css: ".highlight { background-color: gold; }"
   });
 
-  if (prevListItemsSelector && newListItemsSelector !== prevListItemsSelector)
-    executeClearAndFilter(tab.id, filterText, prevListItemsSelector, newListItemsSelector);
+  if (prevSelector && newSelector !== prevSelector)
+    executeClearAndFilter(tab.id, filterText, prevSelector, newSelector);
   else
-    executeFilter(tab.id, filterText, newListItemsSelector);
+    executeFilter(tab.id, filterText, newSelector);
 
-  prevListItemsSelector = newListItemsSelector;
+  prevSelector = newSelector;
 });
 
 function loadDefaultSelector() {
@@ -67,16 +67,16 @@ function loadDefaultSelector() {
       .then(res => res.json())
       .then(selectors => {
         if (domain in selectors)
-          listItemsSelectorElem.value = selectors[domain];
+          selectorElem.value = selectors[domain];
       });
   });
 }
 
 function loadSavedSelector() {
-  chrome.storage.sync.get(["listItemsSelector"], data => {
-    if ("listItemsSelector" in data) {
-      savedListItemsSelector = data.listItemsSelector;
-      listItemsSelectorElem.value = savedListItemsSelector;
+  chrome.storage.sync.get(["selector"], data => {
+    if ("selector" in data) {
+      savedSelector = data.selector;
+      selectorElem.value = savedSelector;
     }
   });
 }
@@ -97,8 +97,8 @@ function executeFilter(tabId, filterText, itemSelector) {
   });
 }
 
-function filter(filterTerms, listItemsSelector) {
-  const listItems = document.querySelectorAll(listItemsSelector);
+function filter(filterTerms, selector) {
+  const listItems = document.querySelectorAll(selector);
 
   for (item of listItems) { // highlight items that don't contain filter terms
     const itemText = item.innerText.toLowerCase();
@@ -111,19 +111,19 @@ function filter(filterTerms, listItemsSelector) {
 }
 
 document.getElementById("clearButton").addEventListener("click", async () => {
-  const listItemsSelector = listItemsSelectorElem.value || testPageSelector;
+  const selector = selectorElem.value || testPageSelector;
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     function: clear,
-    args: [listItemsSelector]
+    args: [selector]
   });
 });
 
-function clear(listItemsSelector) {
-  const listItems = document.querySelectorAll(listItemsSelector);
+function clear(selector) {
+  const listItems = document.querySelectorAll(selector);
 
   for (item of listItems) // remove highlight from any highlighted items
     item.classList.remove("highlight");
