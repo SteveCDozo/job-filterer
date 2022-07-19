@@ -51,10 +51,12 @@ form.addEventListener("submit", async (event) => {
     css: ".highlight { background-color: gold; }"
   });
 
+  const args = [tab.id, filterText, newSelector];
+
   if (prevSelector && newSelector !== prevSelector)
-    executeClearAndFilter(tab.id, filterText, newSelector);
+    executeClearAndFilter(...args);
   else
-    executeFilter(tab.id, filterText, newSelector);
+    executeFilter(...args);
 
   prevSelector = newSelector;
 });
