@@ -52,7 +52,7 @@ form.addEventListener("submit", async (event) => {
   });
 
   if (prevSelector && newSelector !== prevSelector)
-    executeClearAndFilter(tab.id, filterText, prevSelector, newSelector);
+    executeClearAndFilter(tab.id, filterText, newSelector);
   else
     executeFilter(tab.id, filterText, newSelector);
 
@@ -81,15 +81,15 @@ function loadSavedSelector() {
   });
 }
 
-function executeClearAndFilter(tabId, filterText, oldSelector, newSelector) {
-  executeClear(tabId, oldSelector, () => executeFilter(tabId, filterText, newSelector));
+function executeClearAndFilter(tabId, filterText, selector) {
+  executeClear(tabId, () => executeFilter(tabId, filterText, selector));
 }
 
-function executeClear(tabId, selector, callback) {
+function executeClear(tabId, callback) {
   chrome.scripting.executeScript({
     target: { tabId },
     function: clear,
-    args: [selector]
+    args: [prevSelector]
   }, callback);
 }
 
@@ -115,11 +115,10 @@ function filter(filterTerms, selector) {
 }
 
 document.getElementById("clearButton").addEventListener("click", async () => {
-  const selector = selectorElem.value;
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  executeClear(tab.id, selector);
+  executeClear(tab.id);
 });
 
 function clear(selector) {
