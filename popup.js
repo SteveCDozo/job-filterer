@@ -31,8 +31,6 @@ overrideElem.addEventListener("click", (event) => {
   checked ? loadSavedSelector() : loadDefaultSelector();    
 });
 
-const testPageSelector = "#job-container li";
-
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -113,7 +111,7 @@ function filter(filterTerms, selector) {
 }
 
 document.getElementById("clearButton").addEventListener("click", async () => {
-  const selector = selectorElem.value || testPageSelector;
+  const selector = selectorElem.value;
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
