@@ -37,7 +37,10 @@ form.addEventListener("submit", async (event) => {
   const filterText = event.target.filterText.value;
   const listItemsSelector = event.target.listItemsSelector.value;
 
-  chrome.storage.sync.set({ filterText, listItemsSelector });
+  chrome.storage.sync.set({ filterText });
+
+  if (event.target.override.checked)
+    chrome.storage.sync.set({ listItemsSelector });
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
