@@ -93,11 +93,11 @@ function executeClear(tabId, selector, callback) {
   }, callback);
 }
 
-function executeFilter(tabId, filterText, itemSelector) {
+function executeFilter(tabId, filterText, selector) {
   chrome.scripting.executeScript({
     target: { tabId },
     function: filter,
-    args: [filterText.toLowerCase().split(','), itemSelector]
+    args: [filterText.toLowerCase().split(','), selector]
   });
 }
 
