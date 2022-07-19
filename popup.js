@@ -39,6 +39,8 @@ form.addEventListener("submit", async (event) => {
   const filterText = event.target.filterText.value;
   const newSelector = event.target.selector.value;
 
+  if (!filterText || !newSelector) return; // ensure filter & selector aren't empty
+
   chrome.storage.sync.set({ filterText });
 
   if (event.target.override.checked && newSelector !== savedSelector)
