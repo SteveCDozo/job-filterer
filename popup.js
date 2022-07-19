@@ -4,7 +4,7 @@ const overrideElem = document.getElementById("override");
 const filterTextElem = document.getElementById("filterText");
 filterTextElem.focus();
 
-let savedListItemsSelector;
+let savedListItemsSelector, prevListItemsSelector;
 
 chrome.storage.sync.get(["filterText", "override"], data => {
   if ("filterText" in data)
@@ -51,11 +51,12 @@ form.addEventListener("submit", async (event) => {
     css: ".highlight { background-color: gold; }"
   });
 
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    function: filter,
-    args: [filterText.toLowerCase().split(','), newListItemsSelector]
-  });
+  if (prevListItemsSelector && newListItemsSelector !== prevListItemsSelector)
+    executeClearAndFilter(tab.id, filterText, prevListItemsSelector, newListItemsSelector);
+  else
+    executeFilter(tab.id, filterText, newListItemsSelector);
+
+  prevListItemsSelector = newListItemsSelector;
 });
 
 function loadDefaultSelector() {
@@ -77,6 +78,22 @@ function loadSavedSelector() {
       savedListItemsSelector = data.listItemsSelector;
       listItemsSelectorElem.value = savedListItemsSelector;
     }
+  });
+}
+
+function executeClearAndFilter(tabId, filterText, oldSelector, newSelector) {
+  chrome.scripting.executeScript({
+    target: { tabId },
+    function: clear,
+    args: [oldSelector]
+  }, () => executeFilter(tabId, filterText, newSelector));
+}
+
+function executeFilter(tabId, filterText, itemSelector) {
+  chrome.scripting.executeScript({
+    target: { tabId },
+    function: filter,
+    args: [filterText.toLowerCase().split(','), itemSelector]
   });
 }
 
