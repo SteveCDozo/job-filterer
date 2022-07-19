@@ -4,6 +4,8 @@ const overrideElem = document.getElementById("override");
 const filterTextElem = document.getElementById("filterText");
 filterTextElem.focus();
 
+let savedListItemsSelector;
+
 chrome.storage.sync.get(["filterText", "override"], data => {
   if ("filterText" in data)
     filterTextElem.value = data.filterText;
@@ -35,12 +37,12 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const filterText = event.target.filterText.value;
-  const listItemsSelector = event.target.listItemsSelector.value;
+  const newListItemsSelector = event.target.listItemsSelector.value;
 
   chrome.storage.sync.set({ filterText });
 
-  if (event.target.override.checked)
-    chrome.storage.sync.set({ listItemsSelector });
+  if (event.target.override.checked && newListItemsSelector !== savedListItemsSelector)
+    chrome.storage.sync.set({ listItemsSelector: newListItemsSelector });
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -52,7 +54,7 @@ form.addEventListener("submit", async (event) => {
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     function: filter,
-    args: [filterText.toLowerCase().split(','), listItemsSelector]
+    args: [filterText.toLowerCase().split(','), newListItemsSelector]
   });
 });
 
@@ -71,8 +73,10 @@ function loadDefaultSelector() {
 
 function loadSavedSelector() {
   chrome.storage.sync.get(["listItemsSelector"], data => {
-    if ("listItemsSelector" in data)
-      listItemsSelectorElem.value = data.listItemsSelector;
+    if ("listItemsSelector" in data) {
+      savedListItemsSelector = data.listItemsSelector;
+      listItemsSelectorElem.value = savedListItemsSelector;
+    }
   });
 }
 
