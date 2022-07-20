@@ -4,7 +4,7 @@ const overrideElem = document.getElementById("override");
 const filterTextElem = document.getElementById("filterText");
 filterTextElem.focus();
 
-let savedSelector, prevSelector;
+let defaultSelector, savedSelector, prevSelector;
 
 chrome.storage.sync.get(["filterText", "override"], data => {
   if ("filterText" in data)
@@ -68,8 +68,10 @@ function loadDefaultSelector() {
     fetch("selectors.json")
       .then(res => res.json())
       .then(selectors => {
-        if (domain in selectors)
-          selectorElem.value = selectors[domain];
+        if (domain in selectors) {
+          defaultSelector = selectors[domain];
+          selectorElem.value = defaultSelector;
+        }
       });
   });
 }
@@ -88,10 +90,23 @@ function executeClearAndFilter(tabId, filterText, selector) {
 }
 
 function executeClear(tabId, callback) {
+  const prevSelectors = []; // the possiblities for the previously used selector
+
+  if (prevSelector)
+    prevSelectors.push(prevSelector);
+  else { // the previously used selector could be the default or saved selector
+    if (defaultSelector)
+      prevSelectors.push(defaultSelector);
+    if (savedSelector)
+      prevSelectors.push(savedSelector);
+    if (!prevSelectors.length)
+      return;
+  }
+
   chrome.scripting.executeScript({
     target: { tabId },
     function: clear,
-    args: [prevSelector]
+    args: [prevSelectors]
   }, callback);
 }
 
@@ -123,9 +138,11 @@ document.getElementById("clearButton").addEventListener("click", async () => {
   executeClear(tab.id);
 });
 
-function clear(selector) {
-  const listItems = document.querySelectorAll(selector);
+function clear(selectors) {
+  for (const selector of selectors) {
+    const listItems = document.querySelectorAll(selector);
 
-  for (item of listItems) // remove highlight from any highlighted items
-    item.classList.remove("highlight");
+    for (item of listItems) // remove highlight from any highlighted items
+      item.classList.remove("highlight");
+  }
 }
