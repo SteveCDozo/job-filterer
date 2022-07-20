@@ -1,6 +1,7 @@
 const form = document.getElementById("form");
 const selectorElem = document.getElementById("selector");
 const overrideElem = document.getElementById("override");
+const extractElem = document.getElementById("extract");
 const filterTextElem = document.getElementById("filterText");
 filterTextElem.focus();
 
@@ -16,6 +17,7 @@ chrome.storage.sync.get(["filterText", "override"], data => {
     }
     overrideElem.checked = true;
     selectorElem.disabled = false;
+    extractElem.classList.remove("hidden");
     loadSavedSelector();
   }
 });
@@ -25,10 +27,27 @@ overrideElem.addEventListener("click", (event) => {
   const checked = event.target.checked;
 
   selectorElem.disabled = !checked;
+  extractElem.classList.toggle("hidden");
 
   chrome.storage.sync.set({ override: checked });
 
   checked ? loadSavedSelector() : loadDefaultSelector();    
+});
+
+extractElem.addEventListener("click", async () => {
+  if (!chrome.runtime.onMessage.hasListeners()) {
+    chrome.runtime.onMessage.addListener(message => {
+      if ("extractedClassName" in message)     
+        selectorElem.value = '.' + message.extractedClassName.replace(/ /g, '.');
+    });
+  }
+  
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    function: () => chrome.runtime.sendMessage({extractedClassName: getSelection().anchorNode.parentElement.className})
+  })
 });
 
 form.addEventListener("submit", async (event) => {
