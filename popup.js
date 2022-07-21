@@ -7,7 +7,9 @@ filterTextElem.focus();
 
 let defaultSelector, savedSelector, prevSelector;
 
-chrome.storage.sync.get(["filterText", "override"], data => {
+chrome.storage.sync.get(["prevSelector", "filterText", "override"], data => {
+  if ("prevSelector" in data)
+    prevSelector = data.prevSelector;
   if ("filterText" in data)
     filterTextElem.value = data.filterText;
   if ("override" in data) {
@@ -77,7 +79,10 @@ form.addEventListener("submit", async (event) => {
   else
     executeFilter(...args);
 
-  prevSelector = newSelector;
+  if (newSelector !== prevSelector) {
+    prevSelector = newSelector;
+    chrome.storage.sync.set({ prevSelector });    
+  }
 });
 
 function loadDefaultSelector() {
@@ -109,23 +114,10 @@ function executeClearAndFilter(tabId, filterText, selector) {
 }
 
 function executeClear(tabId, callback) {
-  const prevSelectors = []; // the possiblities for the previously used selector
-
-  if (prevSelector)
-    prevSelectors.push(prevSelector);
-  else { // the previously used selector could be the default or saved selector
-    if (defaultSelector)
-      prevSelectors.push(defaultSelector);
-    if (savedSelector)
-      prevSelectors.push(savedSelector);
-    if (!prevSelectors.length)
-      return;
-  }
-
   chrome.scripting.executeScript({
     target: { tabId },
     function: clear,
-    args: [prevSelectors]
+    args: [prevSelector]
   }, callback);
 }
 
@@ -152,16 +144,16 @@ function filter(filterTerms, selector) {
 
 document.getElementById("clearButton").addEventListener("click", async () => {
 
+  if (!prevSelector) return;
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   executeClear(tab.id);
 });
 
-function clear(selectors) {
-  for (const selector of selectors) {
-    const listItems = document.querySelectorAll(selector);
+function clear(selector) {  
+  const listItems = document.querySelectorAll(selector);
 
-    for (item of listItems) // remove highlight from any highlighted items
-      item.classList.remove("highlight");
-  }
+  for (item of listItems) // remove highlight from any highlighted items
+    item.classList.remove("highlight");  
 }
