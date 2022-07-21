@@ -149,6 +149,8 @@ document.getElementById("clearButton").addEventListener("click", async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   executeClear(tab.id);
+  prevSelector = "";
+  chrome.storage.sync.set({ prevSelector });
 });
 
 function clear(selector) {  
