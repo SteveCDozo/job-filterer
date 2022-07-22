@@ -36,13 +36,9 @@ overrideElem.addEventListener("click", (event) => {
   checked ? loadSavedSelector() : loadDefaultSelector();    
 });
 
-extractElem.addEventListener("click", async () => {
-  if (!chrome.runtime.onMessage.hasListeners()) {
-    chrome.runtime.onMessage.addListener(message => {
-      if ("extractedClassName" in message)     
-        selectorElem.value = '.' + message.extractedClassName.replace(/ /g, '.');
-    });
-  }
+extractElem.addEventListener("click", async () => {  
+  if (!chrome.runtime.onMessage.hasListener(extractionListener))
+    chrome.runtime.onMessage.addListener(extractionListener);
   
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   
@@ -51,6 +47,11 @@ extractElem.addEventListener("click", async () => {
     function: () => chrome.runtime.sendMessage({extractedClassName: getSelection().anchorNode.parentElement.className})
   })
 });
+
+function extractionListener(message) {
+  if ("extractedClassName" in message)     
+    selectorElem.value = '.' + message.extractedClassName.replace(/ /g, '.');
+}
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -67,10 +68,7 @@ form.addEventListener("submit", async (event) => {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  chrome.scripting.insertCSS({
-    target: { tabId: tab.id },
-    css: ".highlight { background-color: gold; }"
-  });
+  insertCSS(tab.id);
 
   const args = [tab.id, filterText, newSelector];
 
@@ -106,6 +104,30 @@ function loadSavedSelector() {
       savedSelector = data.selector;
       selectorElem.value = savedSelector;
     }
+  });
+}
+
+function insertCSS(tabId) {
+  if (!chrome.runtime.onMessage.hasListener(cssInsertionListener))
+    chrome.runtime.onMessage.addListener(cssInsertionListener);
+  
+  chrome.scripting.executeScript({
+    target: { tabId },
+    function: (tabId) => {
+      chrome.runtime.sendMessage({ cssInserted: "cssInserted" in window, tabId })
+      cssInserted = true;
+    },
+    args: [tabId]
+  })
+}
+
+function cssInsertionListener(message) {
+  if (!("cssInserted" in message) || !("tabId" in message) || message.cssInserted)
+    return;
+  
+  chrome.scripting.insertCSS({
+    target: { tabId: message.tabId },
+    css: ".highlight { background-color: gold; }"
   });
 }
 
