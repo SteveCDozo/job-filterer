@@ -129,10 +129,13 @@ function cssInsertionListener(message) {
   if (!("cssInserted" in message) || !("tabId" in message) || message.cssInserted)
     return;
   
-  chrome.scripting.insertCSS({
-    target: { tabId: message.tabId },
-    css: ".highlight { background-color: gold; }"
-  });
+  chrome.storage.sync.get(
+    { color: "#ffd700" }, // use gold as default highlight color
+    ({ color }) => chrome.scripting.insertCSS({
+      target: { tabId: message.tabId },
+      css: `.highlight { background-color: ${ color }; }`
+    })
+  );
 }
 
 function executeClearAndFilter(tabId, filterText, selector) {
