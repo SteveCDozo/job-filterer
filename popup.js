@@ -44,7 +44,11 @@ extractElem.addEventListener("click", async () => {
   
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
-    function: () => chrome.runtime.sendMessage({extractedClassName: getSelection().anchorNode.parentElement.className})
+    function: () => {
+      const selection = getSelection();
+      if (selection.type === "None") return;
+      chrome.runtime.sendMessage({extractedClassName: selection.anchorNode.parentElement.className})
+    }
   })
 });
 
