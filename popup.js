@@ -5,24 +5,43 @@ const extractElem = document.getElementById("extract");
 const filterTextElem = document.getElementById("filterText");
 filterTextElem.focus();
 
-let defaultSelector, savedSelector, prevSelector;
+let defaultSelector = "", savedSelector = "", prevSelector;
 
-chrome.storage.sync.get(["prevSelector", "filterText", "override"], data => {
-  if ("prevSelector" in data)
-    prevSelector = data.prevSelector;
-  if ("filterText" in data)
-    filterTextElem.value = data.filterText;
-  if ("override" in data) {
-    if (!data.override) {
-      loadDefaultSelector();
-      return;
+async function loadInitialData() {
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  const domain = new URL(tab.url).hostname;
+
+  const [selectors, data] = await Promise.all([ // load default & saved selectors
+    fetch("selectors.json").then(res => res.json()),
+    chrome.storage.sync.get("selector")
+  ]);
+
+  if (domain in selectors)
+    defaultSelector = selectors[domain];
+  if ("selector" in data)
+    savedSelector = data.selector;
+
+  chrome.storage.sync.get(["prevSelector", "filterText", "override"], data => {
+    if ("prevSelector" in data)
+      prevSelector = data.prevSelector;
+    if ("filterText" in data)
+      filterTextElem.value = data.filterText;
+    if ("override" in data) {
+      if (!data.override) {
+        selectorElem.value = defaultSelector;
+        return;
+      }
+      overrideElem.checked = true;
+      selectorElem.disabled = false;
+      extractElem.classList.remove("hidden");
+      selectorElem.value = savedSelector;
     }
-    overrideElem.checked = true;
-    selectorElem.disabled = false;
-    extractElem.classList.remove("hidden");
-    loadSavedSelector();
-  }
-});
+  });
+}
+
+loadInitialData();
 
 overrideElem.addEventListener("click", (event) => {
 
@@ -33,7 +52,7 @@ overrideElem.addEventListener("click", (event) => {
 
   chrome.storage.sync.set({ override: checked });
 
-  checked ? loadSavedSelector() : loadDefaultSelector();    
+  selectorElem.value = checked ? savedSelector : defaultSelector;
 });
 
 extractElem.addEventListener("click", async () => {  
@@ -88,30 +107,6 @@ form.addEventListener("submit", async (event) => {
     chrome.storage.sync.set({ prevSelector });    
   }
 });
-
-function loadDefaultSelector() {
-  chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-    const domain = new URL(tabs[0].url).hostname;
-
-    fetch("selectors.json")
-      .then(res => res.json())
-      .then(selectors => {
-        if (domain in selectors) {
-          defaultSelector = selectors[domain];
-          selectorElem.value = defaultSelector;
-        }
-      });
-  });
-}
-
-function loadSavedSelector() {
-  chrome.storage.sync.get(["selector"], data => {
-    if ("selector" in data) {
-      savedSelector = data.selector;
-      selectorElem.value = savedSelector;
-    }
-  });
-}
 
 function insertCSS(tabId) {
   if (!chrome.runtime.onMessage.hasListener(cssInsertionListener))
