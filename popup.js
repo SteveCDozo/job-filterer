@@ -5,11 +5,12 @@ const extractElem = document.getElementById("extract");
 const filterTextElem = document.getElementById("filterText");
 filterTextElem.focus();
 
-let defaultSelector = "", savedSelector = "", prevSelector;
+let tabId, defaultSelector = "", savedSelector = "", prevSelector;
 
 async function loadInitialData() {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  tabId = tab.id;
 
   const domain = new URL(tab.url).hostname;
 
@@ -59,10 +60,8 @@ extractElem.addEventListener("click", async () => {
   if (!chrome.runtime.onMessage.hasListener(extractionListener))
     chrome.runtime.onMessage.addListener(extractionListener);
   
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
   chrome.scripting.executeScript({
-    target: { tabId: tab.id },
+    target: { tabId },
     function: () => {
       const selection = getSelection();
       if (selection.type === "None") return;
@@ -91,11 +90,9 @@ form.addEventListener("submit", async (event) => {
     savedSelector = newSelector;
   }
 
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  insertCSS();
 
-  insertCSS(tab.id);
-
-  const args = [tab.id, filterText, newSelector];
+  const args = [filterText, newSelector];
 
   if (prevSelector && newSelector !== prevSelector)
     executeClearAndFilter(...args);
@@ -108,38 +105,37 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-function insertCSS(tabId) {
+function insertCSS() {
   if (!chrome.runtime.onMessage.hasListener(cssInsertionListener))
     chrome.runtime.onMessage.addListener(cssInsertionListener);
   
   chrome.scripting.executeScript({
     target: { tabId },
-    function: (tabId) => {
-      chrome.runtime.sendMessage({ cssInserted: "cssInserted" in window, tabId })
+    function: () => {
+      chrome.runtime.sendMessage({ cssInserted: "cssInserted" in window })
       cssInserted = true;
-    },
-    args: [tabId]
+    }
   })
 }
 
 function cssInsertionListener(message) {
-  if (!("cssInserted" in message) || !("tabId" in message) || message.cssInserted)
+  if (!("cssInserted" in message) || message.cssInserted)
     return;
   
   chrome.storage.sync.get(
     { color: "#ffd700" }, // use gold as default highlight color
     ({ color }) => chrome.scripting.insertCSS({
-      target: { tabId: message.tabId },
+      target: { tabId },
       css: `.highlight { background-color: ${ color }; }`
     })
   );
 }
 
-function executeClearAndFilter(tabId, filterText, selector) {
-  executeClear(tabId, () => executeFilter(tabId, filterText, selector));
+function executeClearAndFilter(filterText, selector) {
+  executeClear(() => executeFilter(filterText, selector));
 }
 
-function executeClear(tabId, callback) {
+function executeClear(callback) {
   chrome.scripting.executeScript({
     target: { tabId },
     function: clear,
@@ -147,7 +143,7 @@ function executeClear(tabId, callback) {
   }, callback);
 }
 
-function executeFilter(tabId, filterText, selector) {
+function executeFilter(filterText, selector) {
   chrome.scripting.executeScript({
     target: { tabId },
     function: filter,
@@ -169,12 +165,9 @@ function filter(filterTerms, selector) {
 }
 
 document.getElementById("clearButton").addEventListener("click", async () => {
-
   if (!prevSelector) return;
 
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-  executeClear(tab.id);
+  executeClear();
   prevSelector = "";
   chrome.storage.sync.set({ prevSelector });
 });
